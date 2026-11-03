@@ -722,7 +722,7 @@ export class PptxHandlerRuntime extends PptxHandlerRuntimeBase {
 		}
 
 		// Table / Chart / SmartArt
-		this.applyDataSerialization(shape, el, ctx.slide.id);
+		this.applyDataSerialization(shape, el, ctx.slide.id, ctx);
 
 		// Actions and locks
 		if (ctx.connectorShapeIds) {

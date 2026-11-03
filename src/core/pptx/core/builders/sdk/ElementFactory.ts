@@ -24,11 +24,17 @@ import type {
 } from '../../types/elements';
 import type { PptxAction } from '../../types/actions';
 import type { ShapeStyle } from '../../types/shape-style';
-import type { PptxTableData, PptxTableRow, PptxTableCell } from '../../types/table';
+import type {
+	PptxTableData,
+	PptxTableRow,
+	PptxTableCell,
+	PptxTableCellStyle,
+} from '../../types/table';
 import type { TextStyle, TextSegment } from '../../types/text';
 import { chartSeriesGradientFromInput } from './chart-gradient-input';
 import { applyChartInputLayout } from './chart-layout-operations';
 import { mapLinkToAction, mapLinkToRunStyle } from './link-input';
+import { tableCellRunsFromSegments } from './table-cell-runs-input';
 import { elementStyleForSegments } from './text-segment-style';
 import {
 	buildShapeStyle,
@@ -50,6 +56,7 @@ import type {
 	GroupOptions,
 	TextStyleInput,
 	LinkInput,
+	TableCellInput,
 } from './types';
 
 // ---------------------------------------------------------------------------
@@ -369,6 +376,43 @@ export function createImageElement(source: string, options?: ImageOptions): Imag
 }
 
 /**
+ * A cell with rich text: the runs become `textSegments` (written as given)
+ * and `textRuns` (what the table renderers draw). The cell style keeps only
+ * what is not run formatting, so the save does not stamp one run's format
+ * over the others.
+ */
+function createRichTableCell(cellInput: TableCellInput): PptxTableCell {
+	const { fontSize, ...rest } = cellInput.style ?? {};
+	// Cell `style.fontSize` is points; runs, like all text segments, take px.
+	const base: Partial<TextStyleInput> = {
+		...rest,
+		...(fontSize !== undefined ? { fontSize: (fontSize * 96) / 72 } : {}),
+	};
+	const textSegments = buildTextSegments(cellInput.runs ?? [], base);
+	const text = textSegments.map((segment) => segment.text).join('');
+	if (cellInput.text !== undefined && cellInput.text !== text) {
+		throw new RangeError(
+			`A table cell gives both text "${cellInput.text}" and runs that spell "${text}"`,
+		);
+	}
+	const style: PptxTableCellStyle = {};
+	if (cellInput.style?.alignment !== undefined) {
+		style.align = cellInput.style.alignment;
+	}
+	if (cellInput.style?.verticalAlignment !== undefined) {
+		style.vAlign = cellInput.style.verticalAlignment;
+	}
+	return {
+		text,
+		textSegments,
+		textRuns: tableCellRunsFromSegments(textSegments),
+		...(cellInput.gridSpan !== undefined ? { gridSpan: cellInput.gridSpan } : {}),
+		...(cellInput.rowSpan !== undefined ? { rowSpan: cellInput.rowSpan } : {}),
+		...(Object.keys(style).length > 0 ? { style } : {}),
+	};
+}
+
+/**
  * Create a table element.
  *
  * @param input - Table rows, columns, and styling options.
@@ -404,20 +448,25 @@ export function createTableElement(input: TableInput, options?: TableOptions): T
 
 	const rows: PptxTableRow[] = input.rows.map((rowInput) => ({
 		height: rowInput.height ?? rowHeight,
-		cells: rowInput.cells.map((cellInput): PptxTableCell => ({
-			text: cellInput.text,
-			gridSpan: cellInput.gridSpan,
-			rowSpan: cellInput.rowSpan,
-			style: cellInput.style
-				? {
-						fontSize: cellInput.style.fontSize,
-						bold: cellInput.style.bold,
-						italic: cellInput.style.italic,
-						color: cellInput.style.color,
-						align: cellInput.style.alignment,
-					}
-				: undefined,
-		})),
+		cells: rowInput.cells.map((cellInput): PptxTableCell => {
+			if (cellInput.runs && cellInput.runs.length > 0) {
+				return createRichTableCell(cellInput);
+			}
+			return {
+				text: cellInput.text ?? '',
+				gridSpan: cellInput.gridSpan,
+				rowSpan: cellInput.rowSpan,
+				style: cellInput.style
+					? {
+							fontSize: cellInput.style.fontSize,
+							bold: cellInput.style.bold,
+							italic: cellInput.style.italic,
+							color: cellInput.style.color,
+							align: cellInput.style.alignment,
+						}
+					: undefined,
+			};
+		}),
 	}));
 
 	const tableData: PptxTableData = {
