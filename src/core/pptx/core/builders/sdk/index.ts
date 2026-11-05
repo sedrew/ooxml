@@ -262,6 +262,7 @@ export type {
 	AnimationInput,
 	PresentationOptions,
 	PresentationThemeInput,
+	CustomPathInput,
 } from './types';
 
 export { importSlidePackage } from './import-slide-package';

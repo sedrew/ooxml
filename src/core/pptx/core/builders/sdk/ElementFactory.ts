@@ -27,6 +27,7 @@ import type { PptxTableData, PptxTableRow, PptxTableCell } from '../../types/tab
 import type { TextStyle, TextSegment } from '../../types/text';
 import { chartSeriesGradientFromInput } from './chart-gradient-input';
 import { applyChartInputLayout } from './chart-layout-operations';
+import { customGeometryFromInput } from './custom-path-input';
 import {
 	buildShapeStyle,
 	connectorLineEndOverride,
@@ -262,6 +263,9 @@ export function createShapeElement(shapeType: string, options?: ShapeOptions): S
 			effectInputs(options, options?.fill ?? { type: 'solid', color: '#4472C4' }),
 		),
 	};
+	if (options?.paths && options.paths.length > 0) {
+		Object.assign(el, customGeometryFromInput(options.paths, p.width, p.height));
+	}
 	if (options?.text) {
 		el.text = options.text;
 		el.textStyle = mapTextStyleInput(options.textStyle) as TextStyle;
