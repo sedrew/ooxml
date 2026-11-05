@@ -48,6 +48,7 @@ export type {
 	ChartFontInput,
 	ChartSeriesLineInput,
 	ChartSeriesMarkerInput,
+	ChartTitleRunInput,
 } from './chart-content-input';
 
 // ---------------------------------------------------------------------------
