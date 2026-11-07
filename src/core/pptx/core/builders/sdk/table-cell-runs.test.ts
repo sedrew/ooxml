@@ -138,6 +138,35 @@ describe('table cell runs', () => {
 		expect(b).toContain('sz="1050"');
 	});
 
+	it('keeps the cell fill, borders and merge of a cell with runs', async () => {
+		const { cells } = await save({
+			rows: [
+				{
+					cells: [
+						{
+							runs: [{ text: 'A', style: { bold: true } }, { text: 'B' }],
+							style: { color: '#FF0000' },
+							fill: { type: 'solid', color: '#00B050' },
+							borders: { bottom: { color: '#203864', width: 2 } },
+							gridSpan: 2,
+						},
+					],
+				},
+				{ cells: [{ text: 'C' }, { text: 'D' }] },
+			],
+		});
+		const cell = cells[0];
+		expect(cell).toContain('gridSpan="2"');
+		const tcPr = /<a:tcPr\b[\s\S]*?<\/a:tcPr>/.exec(cell)?.[0] ?? '';
+		expect(tcPr).toContain('<a:srgbClr val="00B050">');
+		expect(tcPr).toContain('<a:lnB');
+		const [a, b] = runs(cell);
+		expect(a).toContain('b="1"');
+		expect(b).not.toContain('b="1"');
+		expect(a).toContain('val="FF0000"');
+		expect(b).toContain('val="FF0000"');
+	});
+
 	it('writes plain text for an empty run list', async () => {
 		const { cells } = await save({ rows: [{ cells: [{ text: 'plain', runs: [] }] }] });
 		expect(runs(cells[0])).toHaveLength(1);
