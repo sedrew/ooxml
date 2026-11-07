@@ -259,6 +259,8 @@ export type {
 	TableInput,
 	TableRowInput,
 	TableCellInput,
+	TableCellBordersInput,
+	TableCellBorderInput,
 	TableOptions,
 	ChartSeriesInput,
 	ChartGradientInput,
