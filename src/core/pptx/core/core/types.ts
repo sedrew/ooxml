@@ -83,6 +83,18 @@ export interface PptxHandlerLoadOptions {
 	 */
 	limits?: PptxLoadLimits;
 	/**
+	 * Called once every slide is parsed, before the rest of the deck (notes
+	 * and handout masters, theme variants, document properties, thumbnail)
+	 * is read, so a host can start work that needs only the slides, such as
+	 * downloading the webfonts they draw, while `load()` finishes. `slides`
+	 * hold the same parsed content `load()` resolves with; `embeddedFonts` are
+	 * the deck's embedded font variants. Not called by `loadFromJson`.
+	 */
+	onSlidesParsed?: (parsed: {
+		slides: readonly PptxSlide[];
+		embeddedFonts: readonly PptxEmbeddedFont[];
+	}) => void;
+	/**
 	 * When `false` (default), relationship targets that resolve to
 	 * `http://` or `https://` URLs are dropped from rendered slides
 	 * (image, picture, background). Set to `true` to allow external image
@@ -166,6 +178,14 @@ export type PptxSvgRasterizer = (
 ) => Promise<Uint8Array | undefined>;
 
 export interface PptxHandlerSaveOptions {
+	/**
+	 * A reproducible save: `dcterms:created` / `dcterms:modified` are this date
+	 * (unless `coreProperties` gives them), `cp:revision` is
+	 * `coreProperties.revision` or 1 instead of the next count, new table
+	 * columns get reproducible `a16:colId`s and every ZIP entry is dated this
+	 * date. Two saves of the same input then produce the same bytes.
+	 */
+	fixedDate?: Date;
 	headerFooter?: PptxHeaderFooter;
 	presentationProperties?: PptxPresentationProperties;
 	customShows?: PptxCustomShow[];
