@@ -275,6 +275,7 @@ export type {
 	TransitionInput,
 	AnimationInput,
 	PresentationOptions,
+	PresentationAppPropertiesInput,
 	PresentationThemeInput,
 } from './types';
 
